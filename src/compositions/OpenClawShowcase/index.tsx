@@ -9,10 +9,11 @@ import {
 import { ThemeProvider, telegramTheme, useTheme } from "../../themes";
 import { Background } from "../../components/layout/Background";
 import { TerminalWindow } from "../../components/layout/TerminalWindow";
+import { calculateScroll } from "../../animations";
 import {
   CHAT_MESSAGES,
-  TEST_RESULTS,
-  TEST_COMMAND,
+  TERMINAL_LINES,
+  CODE_CHANGE,
   PHASE,
   ChatMessage,
 } from "./data";
@@ -55,7 +56,8 @@ const HeroOverlay: React.FC = () => {
             fontWeight: 800,
             fontFamily: theme.typography.system,
             color: theme.colors.text.primary,
-            textShadow: `0 0 60px rgba(42, 171, 238, 0.6), 0 0 120px rgba(42, 171, 238, 0.3)`,
+            textShadow:
+              "0 0 60px rgba(42, 171, 238, 0.6), 0 0 120px rgba(42, 171, 238, 0.3)",
             letterSpacing: -1,
           }}
         >
@@ -122,7 +124,6 @@ const ChatBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
     config: { damping: 15, stiffness: 180, mass: 0.8 },
   });
 
-  // Typewriter: reveal 3 chars per frame
   const charsVisible = Math.min(message.text.length, elapsed * 3);
   const displayText = message.text.slice(0, charsVisible);
 
@@ -143,7 +144,7 @@ const ChatBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
           borderRadius: isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
           backgroundColor: isUser ? "#2AABEE" : "#1C2B3A",
           color: "#FFFFFF",
-          fontSize: 22,
+          fontSize: 26,
           fontFamily: "system-ui, -apple-system, sans-serif",
           lineHeight: 1.4,
         }}
@@ -168,19 +169,18 @@ const PhoneMockup: React.FC = () => {
 
   if (frame < PHASE.PHONE_APPEAR - 5) return null;
 
-  // Show typing indicator before Hermes replies
   const showTyping1 =
     frame >= PHASE.HERMES_REPLY - 30 && frame < PHASE.HERMES_REPLY;
-
-  // Show typing indicator before report messages
   const showTyping2 =
-    frame >= PHASE.REPORT_START - 25 && frame < PHASE.REPORT_START;
+    frame >= PHASE.FAILURE_REPORT - 25 && frame < PHASE.FAILURE_REPORT;
+  const showTyping3 =
+    frame >= PHASE.FIX_REPORT - 25 && frame < PHASE.FIX_REPORT;
 
   return (
     <div
       style={{
-        width: 420,
-        height: 780,
+        width: 480,
+        height: 880,
         borderRadius: 44,
         backgroundColor: "#0E1621",
         border: "3px solid rgba(255,255,255,0.1)",
@@ -225,33 +225,24 @@ const PhoneMockup: React.FC = () => {
           borderBottom: "1px solid rgba(255,255,255,0.05)",
         }}
       >
-        {/* Back arrow */}
         <div
-          style={{
-            color: "#2AABEE",
-            fontSize: 24,
-            fontFamily: "system-ui",
-          }}
+          style={{ color: "#2AABEE", fontSize: 24, fontFamily: "system-ui" }}
         >
           &larr;
         </div>
-        {/* Avatar */}
         <div
           style={{
             width: 40,
             height: 40,
             borderRadius: "50%",
-            background:
-              "linear-gradient(135deg, #2AABEE 0%, #229ED9 100%)",
+            background: "linear-gradient(135deg, #2AABEE 0%, #229ED9 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 20,
-            fontWeight: 700,
-            color: "#fff",
+            fontSize: 24,
           }}
         >
-          H
+          🦀
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <div
@@ -305,7 +296,10 @@ const PhoneMockup: React.FC = () => {
           <TypingIndicator startFrame={PHASE.HERMES_REPLY - 30} />
         )}
         {showTyping2 && (
-          <TypingIndicator startFrame={PHASE.REPORT_START - 25} />
+          <TypingIndicator startFrame={PHASE.FAILURE_REPORT - 25} />
+        )}
+        {showTyping3 && (
+          <TypingIndicator startFrame={PHASE.FIX_REPORT - 25} />
         )}
       </div>
 
@@ -358,67 +352,144 @@ const PhoneMockup: React.FC = () => {
   );
 };
 
-// ─── Test Output Panel ───────────────────────────────────────────────────────
+// ─── Code Diff View ──────────────────────────────────────────────────────────
 
-const TestOutputPanel: React.FC = () => {
+const CodeDiffView: React.FC = () => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   const theme = useTheme();
 
+  const elapsed = frame - CODE_CHANGE.appearAt;
+  if (elapsed < 0) return null;
+
+  const appear = spring({
+    frame: elapsed,
+    fps,
+    config: { damping: 14, stiffness: 140, mass: 0.8 },
+  });
+
+  const colorMap = {
+    context: theme.colors.text.secondary,
+    removed: theme.colors.status.error,
+    added: theme.colors.status.success,
+  };
+
+  const prefixMap = {
+    context: "  ",
+    removed: "- ",
+    added: "+ ",
+  };
+
+  const bgMap = {
+    context: "transparent",
+    removed: "rgba(255, 71, 87, 0.08)",
+    added: "rgba(52, 208, 88, 0.08)",
+  };
+
   return (
-    <TerminalWindow title="~/project">
+    <div
+      style={{
+        opacity: appear,
+        transform: `translateY(${(1 - appear) * 12}px)`,
+        marginTop: 16,
+      }}
+    >
+      {/* Filename header */}
       <div
         style={{
+          fontSize: 24,
+          color: theme.colors.text.accent,
           fontFamily: theme.typography.mono,
-          fontSize: 20,
-          lineHeight: 1.7,
-          color: theme.colors.text.primary,
+          marginBottom: 8,
+          opacity: 0.8,
         }}
       >
-        {/* Command line */}
-        {frame >= PHASE.TERMINAL_IN + 10 && (
-          <div style={{ marginBottom: 12 }}>
-            <span style={{ color: theme.colors.prompt }}>$ </span>
-            <span>{TEST_COMMAND}</span>
-          </div>
-        )}
+        {CODE_CHANGE.filename}
+      </div>
 
-        {/* Test results */}
-        {TEST_RESULTS.map((test) => {
-          if (frame < test.appearAt) return null;
-          const isPass = test.status === "pass";
-          const icon = isPass ? "\u2713" : "\u2717";
-          const color = isPass
-            ? theme.colors.status.success
-            : theme.colors.status.error;
+      {/* Diff lines */}
+      <div
+        style={{
+          backgroundColor: "rgba(0,0,0,0.3)",
+          borderRadius: 8,
+          padding: "10px 14px",
+          border: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        {CODE_CHANGE.lines.map((line, i) => {
+          // Stagger each line by 3 frames
+          const lineElapsed = elapsed - i * 3;
+          if (lineElapsed < 0) return null;
 
           return (
-            <div key={test.name} style={{ display: "flex", gap: 10 }}>
-              <span style={{ color }}>{icon}</span>
-              <span style={{ color: theme.colors.text.secondary }}>
-                {test.name}
-              </span>
-              <span style={{ color: theme.colors.text.muted }}>
-                ({test.testCount} tests)
-              </span>
-              {test.failedTest && (
-                <span style={{ color: theme.colors.status.error }}>
-                  &mdash; {test.failedTest}
-                </span>
-              )}
+            <div
+              key={i}
+              style={{
+                fontFamily: theme.typography.mono,
+                fontSize: 24,
+                lineHeight: 1.6,
+                color: colorMap[line.type],
+                backgroundColor: bgMap[line.type],
+                padding: "1px 6px",
+                borderRadius: 3,
+                whiteSpace: "pre",
+              }}
+            >
+              <span style={{ opacity: 0.5 }}>{prefixMap[line.type]}</span>
+              {line.text}
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+};
 
-        {/* Summary line */}
-        {frame >= PHASE.TESTS_END && (
-          <div style={{ marginTop: 16 }}>
-            <span style={{ color: theme.colors.status.success }}>
-              23 passed
-            </span>
-            <span style={{ color: theme.colors.text.muted }}>, </span>
-            <span style={{ color: theme.colors.status.error }}>1 failed</span>
-          </div>
-        )}
+// ─── Terminal Panel ──────────────────────────────────────────────────────────
+
+const TerminalPanel: React.FC = () => {
+  const frame = useCurrentFrame();
+  const theme = useTheme();
+
+  const colorMap: Record<string, string> = {
+    prompt: theme.colors.prompt,
+    default: theme.colors.text.primary,
+    success: theme.colors.status.success,
+    error: theme.colors.status.error,
+    muted: theme.colors.text.muted,
+    accent: theme.colors.text.accent,
+  };
+
+  // Scroll as content overflows: scroll during test results, then again for fix + diff
+  const scrollAmount = calculateScroll(frame, [
+    { startFrame: 280, endFrame: 340, distance: 120 },
+    { startFrame: 400, endFrame: 440, distance: 100 },
+    { startFrame: 455, endFrame: 480, distance: 160 },
+  ]);
+
+  return (
+    <TerminalWindow title="hermes@openclaw ~">
+      <div
+        style={{
+          fontFamily: theme.typography.mono,
+          fontSize: 26,
+          lineHeight: 1.7,
+          color: theme.colors.text.primary,
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ transform: `translateY(-${scrollAmount}px)` }}>
+          {TERMINAL_LINES.map((line, i) => {
+            if (frame < line.appearAt) return null;
+            return (
+              <div key={i} style={{ color: colorMap[line.color || "default"] }}>
+                {line.text || "\u00A0"}
+              </div>
+            );
+          })}
+
+          <CodeDiffView />
+        </div>
       </div>
     </TerminalWindow>
   );
@@ -430,46 +501,16 @@ const OpenClawShowcaseInner: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // 3D tilt: interpolate rotateX from 0 to 12, rotateY from 0 to -3
-  const tiltIn = interpolate(
+  // Phone: centered (50%) at first, slides to left (22%) when terminal appears
+  const phoneLeft = interpolate(
     frame,
-    [PHASE.TILT_START, PHASE.TILT_END],
-    [0, 1],
+    [PHASE.TERMINAL_IN, PHASE.TERMINAL_IN + 30, PHASE.TERMINAL_OUT, PHASE.TERMINAL_OUT + 30],
+    [50, 22, 22, 50],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
-  const tiltOut = interpolate(
-    frame,
-    [PHASE.UNTILT_START, PHASE.UNTILT_END],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const tilt = tiltIn - tiltOut;
 
-  const rotateX = tilt * 12;
-  const rotateY = tilt * -3;
-
-  // Phone position: centered → shift left when terminal appears
-  const phoneShift = interpolate(
-    frame,
-    [PHASE.TILT_START, PHASE.TILT_END],
-    [0, -280],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const phoneReturn = interpolate(
-    frame,
-    [PHASE.UNTILT_START, PHASE.UNTILT_END],
-    [0, 280],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const phoneX = phoneShift + phoneReturn;
-
-  // Phone scale: shrink slightly during tilt
-  const phoneScale = interpolate(
-    frame,
-    [PHASE.TILT_START, PHASE.TILT_END, PHASE.UNTILT_START, PHASE.UNTILT_END],
-    [1, 0.88, 0.88, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+  // Phone scale: no shrinking — keep it big for mobile viewers
+  const phoneScale = 1;
 
   // Terminal slide in from right
   const terminalSlide = spring({
@@ -483,7 +524,7 @@ const OpenClawShowcaseInner: React.FC = () => {
     [500, 0]
   );
 
-  // Terminal slide out
+  // Terminal fade out
   const terminalOut = interpolate(
     frame,
     [PHASE.TERMINAL_OUT, PHASE.TERMINAL_OUT + 25],
@@ -498,38 +539,34 @@ const OpenClawShowcaseInner: React.FC = () => {
     <Background>
       <HeroOverlay />
 
-      {/* 3D Scene Wrapper */}
+      {/* Phone — absolute positioned so it can slide without pushing layout */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 60,
-          transform: `perspective(1800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-          transformStyle: "preserve-3d",
+          position: "absolute",
+          top: "50%",
+          left: `${phoneLeft}%`,
+          transform: `translate(-50%, -50%) scale(${phoneScale})`,
+          zIndex: 2,
         }}
       >
-        {/* Phone */}
+        <PhoneMockup />
+      </div>
+
+      {/* Terminal — absolute positioned on right side */}
+      {showTerminal && (
         <div
           style={{
-            transform: `translateX(${phoneX}px) scale(${phoneScale})`,
+            position: "absolute",
+            top: "50%",
+            right: 50,
+            transform: `translate(${terminalX}px, -50%)`,
+            opacity: terminalOpacity,
+            zIndex: 1,
           }}
         >
-          <PhoneMockup />
+          <TerminalPanel />
         </div>
-
-        {/* Terminal */}
-        {showTerminal && (
-          <div
-            style={{
-              transform: `translateX(${terminalX}px)`,
-              opacity: terminalOpacity,
-            }}
-          >
-            <TestOutputPanel />
-          </div>
-        )}
-      </div>
+      )}
     </Background>
   );
 };

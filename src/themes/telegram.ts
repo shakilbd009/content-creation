@@ -63,8 +63,8 @@ export const telegramTheme: Theme = {
   },
   spacing: {
     terminal: {
-      width: 960,
-      height: 700,
+      width: 1200,
+      height: 920,
       titleBarHeight: 48,
       padding: 36,
       borderRadius: 16,
