@@ -4,6 +4,7 @@ import { SocialCodeDemo } from "./compositions/SocialCodeDemo";
 import { MultiAgentShowcase } from "./compositions/MultiAgentShowcase";
 import { SecurityFixesShowcase } from "./compositions/SecurityFixesShowcase";
 import { KanbanSprintShowcase } from "./compositions/KanbanSprintShowcase";
+import { OpenClawShowcase } from "./compositions/OpenClawShowcase";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -32,6 +33,13 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="KanbanSprintShowcase"
         component={KanbanSprintShowcase}
+        durationInFrames={600}
+        fps={30}
+        {...HORIZONTAL_16_9}
+      />
+      <Composition
+        id="OpenClawShowcase"
+        component={OpenClawShowcase}
         durationInFrames={600}
         fps={30}
         {...HORIZONTAL_16_9}
