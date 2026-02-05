@@ -6,6 +6,7 @@ import { SecurityFixesShowcase } from "./compositions/SecurityFixesShowcase";
 import { KanbanSprintShowcase } from "./compositions/KanbanSprintShowcase";
 import { OpenClawShowcase } from "./compositions/OpenClawShowcase";
 import { CodeReviewShowcase } from "./compositions/CodeReviewShowcase";
+import { AWSLandingZoneShowcase } from "./compositions/AWSLandingZoneShowcase";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -49,6 +50,13 @@ export const RemotionRoot: React.FC = () => {
         id="CodeReviewShowcase"
         component={CodeReviewShowcase}
         durationInFrames={750}
+        fps={30}
+        {...HORIZONTAL_16_9}
+      />
+      <Composition
+        id="AWSLandingZoneShowcase"
+        component={AWSLandingZoneShowcase}
+        durationInFrames={540}
         fps={30}
         {...HORIZONTAL_16_9}
       />
