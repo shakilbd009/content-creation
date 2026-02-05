@@ -1,0 +1,26 @@
+# Output
+out/
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+.remotion/
+
+# Cache
+.cache/
+*.pack
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Env
+.env
+.env.local
