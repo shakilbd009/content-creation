@@ -9,6 +9,7 @@ import { CodeReviewShowcase } from "./compositions/CodeReviewShowcase";
 import { AWSLandingZoneShowcase } from "./compositions/AWSLandingZoneShowcase";
 import { SecurityOUShowcase } from "./compositions/SecurityOUShowcase";
 import { CloudNativeShowcase } from "./compositions/CloudNativeShowcase";
+import { CICDPipelineShowcase } from "./compositions/CICDPipelineShowcase";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -73,6 +74,13 @@ export const RemotionRoot: React.FC = () => {
         id="CloudNativeShowcase"
         component={CloudNativeShowcase}
         durationInFrames={540}
+        fps={30}
+        {...HORIZONTAL_16_9}
+      />
+      <Composition
+        id="CICDPipelineShowcase"
+        component={CICDPipelineShowcase}
+        durationInFrames={510}
         fps={30}
         {...HORIZONTAL_16_9}
       />
