@@ -10,6 +10,8 @@ import { AWSLandingZoneShowcase } from "./compositions/AWSLandingZoneShowcase";
 import { SecurityOUShowcase } from "./compositions/SecurityOUShowcase";
 import { CloudNativeShowcase } from "./compositions/CloudNativeShowcase";
 import { CICDPipelineShowcase } from "./compositions/CICDPipelineShowcase";
+import { TwelveFactorShowcase } from "./compositions/TwelveFactorShowcase";
+import { ZeroTrustShowcase } from "./compositions/ZeroTrustShowcase";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -81,6 +83,20 @@ export const RemotionRoot: React.FC = () => {
         id="CICDPipelineShowcase"
         component={CICDPipelineShowcase}
         durationInFrames={510}
+        fps={30}
+        {...HORIZONTAL_16_9}
+      />
+      <Composition
+        id="TwelveFactorShowcase"
+        component={TwelveFactorShowcase}
+        durationInFrames={540}
+        fps={30}
+        {...HORIZONTAL_16_9}
+      />
+      <Composition
+        id="ZeroTrustShowcase"
+        component={ZeroTrustShowcase}
+        durationInFrames={540}
         fps={30}
         {...HORIZONTAL_16_9}
       />
